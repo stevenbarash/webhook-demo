@@ -65,3 +65,7 @@ webhook-demo/
 
 ## License
 MIT 
+
+## Vercel Hosting Warning
+
+**Note:** When deployed to Vercel, the file system is ephemeral. This means webhook data stored in `data/webhook-data.json` will NOT persist between deployments or serverless function invocations. For production use, you must use a database or external storage for persistence. 
