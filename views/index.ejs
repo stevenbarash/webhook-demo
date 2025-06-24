@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Demo - Webhook Data Viewer</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">🔗 Webhook Demo</h1>
+            <nav class="nav">
+                <a href="/" class="nav-link">Dashboard</a>
+                <a href="/health" class="nav-link" target="_blank">Health</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <div class="dashboard-header">
+                <div class="stats">
+                    <div class="stat-card">
+                        <h3>Total Webhooks</h3>
+                        <p class="stat-number"><%= totalCount %></p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Latest</h3>
+                        <p class="stat-number"><%= webhooks.length > 0 ? new Date(webhooks[0].timestamp).toLocaleString() : 'None' %></p>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button id="refreshBtn" class="btn btn-primary">🔄 Refresh</button>
+                    <button id="clearBtn" class="btn btn-danger">🗑️ Clear All</button>
+                </div>
+            </div>
+
+            <div class="webhook-info">
+                <h2>Webhook Endpoint</h2>
+                <div class="endpoint-card">
+                    <div class="endpoint-url">
+                        <strong>URL:</strong> <code id="webhookUrl">http://localhost:3000/webhook</code>
+                        <button id="copyUrl" class="btn btn-small">📋 Copy</button>
+                    </div>
+                    <div class="endpoint-method">
+                        <strong>Method:</strong> <span class="method-badge">POST</span>
+                    </div>
+                    <div class="endpoint-content-type">
+                        <strong>Content-Type:</strong> <code>application/json</code>
+                    </div>
+                </div>
+            </div>
+
+            <% if (webhooks.length === 0) { %>
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <h3>No webhooks received yet</h3>
+                    <p>Send a POST request to <code>/webhook</code> to see data here</p>
+                    <div class="example-request">
+                        <h4>Example cURL request:</h4>
+                        <pre><code class="language-bash">curl -X POST http://localhost:3000/webhook \\
+  -H "Content-Type: application/json" \\
+  -d '{"message": "Hello from webhook!", "timestamp": "<%= new Date().toISOString() %>"}'</code></pre>
+                    </div>
+                </div>
+            <% } else { %>
+                <div class="webhooks-list">
+                    <h2>Recent Webhooks</h2>
+                    <% webhooks.forEach((webhook, index) => { %>
+                        <div class="webhook-card" data-id="<%= webhook.id %>">
+                            <div class="webhook-header">
+                                <div class="webhook-meta">
+                                    <span class="webhook-id">#<%= webhook.id.slice(-8) %></span>
+                                    <span class="webhook-time"><%= new Date(webhook.timestamp).toLocaleString() %></span>
+                                </div>
+                                <div class="webhook-actions">
+                                    <button class="btn btn-small toggle-payload" data-id="<%= webhook.id %>">
+                                        📄 Toggle Payload
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="webhook-details">
+                                <div class="detail-row">
+                                    <strong>Method:</strong> <span class="method-badge"><%= webhook.method %></span>
+                                </div>
+                                <div class="detail-row">
+                                    <strong>URL:</strong> <code><%= webhook.url %></code>
+                                </div>
+                                <div class="detail-row">
+                                    <strong>Content-Type:</strong> <code><%= webhook.headers['content-type'] || 'Not specified' %></code>
+                                </div>
+                                <div class="detail-row">
+                                    <strong>User-Agent:</strong> <code><%= webhook.headers['user-agent'] || 'Not specified' %></code>
+                                </div>
+                            </div>
+
+                            <div class="webhook-payload" id="payload-<%= webhook.id %>" style="display: none;">
+                                <h4>Payload:</h4>
+                                <pre><code class="language-json"><%= JSON.stringify(webhook.payload, null, 2) %></code></pre>
+                                
+                                <h4>Headers:</h4>
+                                <pre><code class="language-json"><%= JSON.stringify(webhook.headers, null, 2) %></code></pre>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } %>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Webhook Demo. Webhook endpoint: <code>/webhook</code></p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="/script.js"></script>
+</body>
+</html> 

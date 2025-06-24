@@ -1,0 +1,79 @@
+[
+  {
+    "id": "17506974810602apbetzc6",
+    "timestamp": "2025-06-23T16:51:21.060Z",
+    "payload": {
+      "claims": null
+    },
+    "headers": {
+      "host": "6437-57-190-1-9.ngrok-free.app",
+      "user-agent": "node-fetch",
+      "content-length": "15",
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate, br",
+      "content-type": "application/json",
+      "x-descope-timestamp": "1750697482580",
+      "x-forwarded-for": "54.166.83.152",
+      "x-forwarded-host": "6437-57-190-1-9.ngrok-free.app",
+      "x-forwarded-proto": "https"
+    },
+    "method": "POST",
+    "url": "/webhook"
+  },
+  {
+    "id": "1750696880424eexgu4krt",
+    "timestamp": "2025-06-23T16:41:20.424Z",
+    "payload": {
+      "payment": {
+        "id": "pay_123",
+        "amount": 2999,
+        "currency": "usd",
+        "status": "succeeded"
+      }
+    },
+    "headers": {
+      "host": "localhost:3000",
+      "user-agent": "curl/8.7.1",
+      "accept": "*/*",
+      "content-type": "application/json",
+      "content-length": "88"
+    },
+    "method": "POST",
+    "url": "/webhook"
+  },
+  {
+    "id": "1750696876392wxww49kdw",
+    "timestamp": "2025-06-23T16:41:16.392Z",
+    "payload": {
+      "event": "user.created",
+      "user_id": 123,
+      "email": "test@example.com"
+    },
+    "headers": {
+      "host": "localhost:3000",
+      "user-agent": "curl/8.7.1",
+      "accept": "*/*",
+      "content-type": "application/json",
+      "content-length": "70"
+    },
+    "method": "POST",
+    "url": "/webhook"
+  },
+  {
+    "id": "175069687235227661cnii",
+    "timestamp": "2025-06-23T16:41:12.352Z",
+    "payload": {
+      "message": "Hello from webhook!",
+      "timestamp": "2025-06-23T16:39:49.160Z"
+    },
+    "headers": {
+      "host": "localhost:3000",
+      "user-agent": "curl/8.7.1",
+      "accept": "*/*",
+      "content-type": "application/json",
+      "content-length": "75"
+    },
+    "method": "POST",
+    "url": "/webhook"
+  }
+]
