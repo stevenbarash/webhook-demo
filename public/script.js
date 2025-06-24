@@ -12,7 +12,10 @@ document.addEventListener('DOMContentLoaded', function () {
   if (clearBtn) {
     clearBtn.addEventListener('click', async () => {
       if (confirm('Are you sure you want to clear all webhook data?')) {
-        await fetch('/api/webhooks', { method: 'DELETE' });
+        // Get namespace from URL
+        let namespace = window.location.pathname.split('/')[2];
+        if (!namespace) namespace = 'default';
+        await fetch(`/api/webhooks/${namespace}`, { method: 'DELETE' });
         window.location.reload();
       }
     });

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Demo - Choose Namespace</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">🔗 Webhook Demo</h1>
+            <nav class="nav">
+                <a href="/webhook" class="nav-link">Namespaces</a>
+                <a href="/health" class="nav-link" target="_blank">Health</a>
+            </nav>
+        </div>
+    </header>
+    <main class="main">
+        <div class="container">
+            <h2>Available Namespaces</h2>
+            <% if (namespaces.length === 0) { %>
+                <div class="empty-state">
+                    <div class="empty-icon">📭</div>
+                    <h3>No namespaces yet</h3>
+                    <p>Start by creating a new namespace below.</p>
+                </div>
+            <% } else { %>
+                <ul>
+                    <% namespaces.forEach(ns => { %>
+                        <li style="margin-bottom: 1rem;">
+                            <a class="btn btn-primary" href="/webhook/<%= ns %>">/webhook/<%= ns %></a>
+                        </li>
+                    <% }); %>
+                </ul>
+            <% } %>
+            <hr style="margin: 2rem 0;">
+            <h3>Create a New Namespace</h3>
+            <form id="createNamespaceForm" style="display: flex; gap: 1rem; align-items: center;">
+                <input type="text" id="namespaceInput" placeholder="Enter namespace (e.g. steven)" required style="padding: 0.5rem; font-size: 1rem;">
+                <button type="submit" class="btn btn-primary">Go</button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+      document.getElementById('createNamespaceForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const ns = document.getElementById('namespaceInput').value.trim();
+        if (ns) {
+          window.location.href = '/webhook/' + encodeURIComponent(ns);
+        }
+      });
+    </script>
+</body>
+</html> 

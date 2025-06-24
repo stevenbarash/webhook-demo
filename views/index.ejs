@@ -42,7 +42,7 @@
                 <h2>Webhook Endpoint</h2>
                 <div class="endpoint-card">
                     <div class="endpoint-url">
-                        <strong>URL:</strong> <code id="webhookUrl">http://localhost:3000/webhook</code>
+                        <strong>URL:</strong> <code id="webhookUrl">http://localhost:3000/webhook<%= typeof namespace !== 'undefined' ? '/' + namespace : '' %></code>
                         <button id="copyUrl" class="btn btn-small">📋 Copy</button>
                     </div>
                     <div class="endpoint-method">
@@ -58,11 +58,11 @@
                 <div class="empty-state">
                     <div class="empty-icon">📭</div>
                     <h3>No webhooks received yet</h3>
-                    <p>Send a POST request to <code>/webhook</code> to see data here</p>
+                    <p>Send a POST request to <code>/webhook<%= typeof namespace !== 'undefined' ? '/' + namespace : '' %></code> to see data here</p>
                     <div class="example-request">
                         <h4>Example cURL request:</h4>
-                        <pre><code class="language-bash">curl -X POST http://localhost:3000/webhook \\
-  -H "Content-Type: application/json" \\
+                        <pre><code class="language-bash">curl -X POST http://localhost:3000/webhook<%= typeof namespace !== 'undefined' ? '/' + namespace : '' %> \
+  -H "Content-Type: application/json" \
   -d '{"message": "Hello from webhook!", "timestamp": "<%= new Date().toISOString() %>"}'</code></pre>
                     </div>
                 </div>
@@ -75,15 +75,20 @@
                                 <div class="webhook-meta">
                                     <span class="webhook-id">#<%= webhook.id.slice(-8) %></span>
                                     <span class="webhook-time"><%= new Date(webhook.timestamp).toLocaleString() %></span>
+                                    <% if (!namespace && webhook.namespace) { %>
+                                        <span class="webhook-ns">Namespace: <code><%= webhook.namespace %></code></span>
+                                    <% } %>
                                 </div>
                                 <div class="webhook-actions">
-                                    <button class="btn btn-small toggle-payload" data-id="<%= webhook.id %>">
-                                        📄 Toggle Payload
-                                    </button>
+                                    <button class="btn btn-small toggle-payload" data-id="<%= webhook.id %>">📄 Toggle Payload</button>
                                 </div>
                             </div>
-                            
                             <div class="webhook-details">
+                                <% if (!namespace && webhook.namespace) { %>
+                                    <div class="detail-row">
+                                        <strong>Namespace:</strong> <code><%= webhook.namespace %></code>
+                                    </div>
+                                <% } %>
                                 <div class="detail-row">
                                     <strong>Method:</strong> <span class="method-badge"><%= webhook.method %></span>
                                 </div>
@@ -97,11 +102,9 @@
                                     <strong>User-Agent:</strong> <code><%= webhook.headers['user-agent'] || 'Not specified' %></code>
                                 </div>
                             </div>
-
                             <div class="webhook-payload" id="payload-<%= webhook.id %>" style="display: none;">
                                 <h4>Payload:</h4>
                                 <pre><code class="language-json"><%= JSON.stringify(webhook.payload, null, 2) %></code></pre>
-                                
                                 <h4>Headers:</h4>
                                 <pre><code class="language-json"><%= JSON.stringify(webhook.headers, null, 2) %></code></pre>
                             </div>
@@ -112,11 +115,6 @@
         </div>
     </main>
 
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 Webhook Demo. Webhook endpoint: <code>/webhook</code></p>
-        </div>
-    </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>

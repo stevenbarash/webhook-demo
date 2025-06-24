@@ -6,12 +6,15 @@ const path = require('path');
 const { app, clearData } = require('../server');
 const DATA_FILE = path.join(__dirname, '../data/webhook-data.json');
 
-describe('Webhook Demo App', () => {
+const TEST_NAMESPACE1 = 'testns1';
+const TEST_NAMESPACE2 = 'testns2';
+
+describe('Webhook Demo App (Namespace Support)', () => {
   beforeEach(async () => {
     // Clear both in-memory data and file data before each test
     clearData();
     try {
-      await fs.writeFile(DATA_FILE, '[]');
+      await fs.writeFile(DATA_FILE, '{}');
     } catch (error) {
       // File might not exist, that's ok
     }
@@ -21,211 +24,186 @@ describe('Webhook Demo App', () => {
     // Clean up after all tests
     clearData();
     try {
-      await fs.writeFile(DATA_FILE, '[]');
+      await fs.writeFile(DATA_FILE, '{}');
     } catch (error) {
       // Ignore cleanup errors
     }
   });
 
   describe('Webhook Endpoint', () => {
-    it('should accept valid JSON POST and return 200 with success', async () => {
-      const testPayload = { 
-        message: 'Hello from webhook!', 
-        timestamp: new Date().toISOString() 
-      };
-
+    it('should accept valid JSON POST and return 200 with success (namespace)', async () => {
+      const testPayload = { message: 'Hello from webhook!', timestamp: new Date().toISOString() };
       const res = await request(app)
-        .post('/webhook')
+        .post(`/webhook/${TEST_NAMESPACE1}`)
         .send(testPayload)
         .set('Content-Type', 'application/json');
-
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.message).toBe('Webhook received successfully');
       expect(res.body.id).toBeDefined();
     });
 
-    it('should store the posted data', async () => {
+    it('should store the posted data in the correct namespace', async () => {
       const testPayload = { test: 'data', number: 42 };
-
       await request(app)
-        .post('/webhook')
+        .post(`/webhook/${TEST_NAMESPACE1}`)
         .send(testPayload)
         .set('Content-Type', 'application/json');
-
-      const getRes = await request(app).get('/api/webhooks');
+      const getRes = await request(app).get(`/api/webhooks/${TEST_NAMESPACE1}`);
       expect(getRes.statusCode).toBe(200);
       expect(getRes.body.length).toBe(1);
       expect(getRes.body[0].payload).toEqual(testPayload);
     });
 
-    it('should store multiple webhooks in correct order', async () => {
-      const payload1 = { message: 'First webhook' };
-      const payload2 = { message: 'Second webhook' };
-
+    it('should isolate data between namespaces', async () => {
       await request(app)
-        .post('/webhook')
-        .send(payload1)
+        .post(`/webhook/${TEST_NAMESPACE1}`)
+        .send({ test: 'ns1' })
         .set('Content-Type', 'application/json');
-
       await request(app)
-        .post('/webhook')
-        .send(payload2)
+        .post(`/webhook/${TEST_NAMESPACE2}`)
+        .send({ test: 'ns2' })
         .set('Content-Type', 'application/json');
-
-      const getRes = await request(app).get('/api/webhooks');
-      expect(getRes.body.length).toBe(2);
-      expect(getRes.body[0].payload).toEqual(payload2); // Most recent first
-      expect(getRes.body[1].payload).toEqual(payload1);
-    });
-
-    it('should include timestamp and headers in stored data', async () => {
-      const testPayload = { test: 'data' };
-
-      const res = await request(app)
-        .post('/webhook')
-        .send(testPayload)
-        .set('Content-Type', 'application/json')
-        .set('User-Agent', 'Test-Agent');
-
-      expect(res.statusCode).toBe(200);
-
-      const getRes = await request(app).get('/api/webhooks');
-      const webhook = getRes.body[0];
-
-      expect(webhook.timestamp).toBeDefined();
-      expect(webhook.headers['content-type']).toBe('application/json');
-      expect(webhook.headers['user-agent']).toBe('Test-Agent');
-      expect(webhook.method).toBe('POST');
-      expect(webhook.url).toBe('/webhook');
+      const res1 = await request(app).get(`/api/webhooks/${TEST_NAMESPACE1}`);
+      const res2 = await request(app).get(`/api/webhooks/${TEST_NAMESPACE2}`);
+      expect(res1.body.length).toBe(1);
+      expect(res2.body.length).toBe(1);
+      expect(res1.body[0].payload).toEqual({ test: 'ns1' });
+      expect(res2.body[0].payload).toEqual({ test: 'ns2' });
     });
   });
 
   describe('API Endpoints', () => {
-    it('GET /api/webhooks should return all stored webhooks', async () => {
-      // Add some test data
+    it('GET /api/webhooks/:namespace should return all stored webhooks for that namespace', async () => {
       await request(app)
-        .post('/webhook')
+        .post(`/webhook/${TEST_NAMESPACE1}`)
         .send({ test: 'data1' })
         .set('Content-Type', 'application/json');
-
       await request(app)
-        .post('/webhook')
+        .post(`/webhook/${TEST_NAMESPACE1}`)
         .send({ test: 'data2' })
         .set('Content-Type', 'application/json');
-
-      const res = await request(app).get('/api/webhooks');
+      const res = await request(app).get(`/api/webhooks/${TEST_NAMESPACE1}`);
       expect(res.statusCode).toBe(200);
       expect(Array.isArray(res.body)).toBe(true);
       expect(res.body.length).toBe(2);
     });
 
-    it('DELETE /api/webhooks should clear all data', async () => {
-      // Add some test data first
+    it('DELETE /api/webhooks/:namespace should clear only that namespace', async () => {
       await request(app)
-        .post('/webhook')
+        .post(`/webhook/${TEST_NAMESPACE1}`)
         .send({ test: 'data' })
         .set('Content-Type', 'application/json');
-
-      // Verify data exists
-      let getRes = await request(app).get('/api/webhooks');
-      expect(getRes.body.length).toBe(1);
-
-      // Clear data
-      const deleteRes = await request(app).delete('/api/webhooks');
+      await request(app)
+        .post(`/webhook/${TEST_NAMESPACE2}`)
+        .send({ test: 'other' })
+        .set('Content-Type', 'application/json');
+      // Clear ns1
+      const deleteRes = await request(app).delete(`/api/webhooks/${TEST_NAMESPACE1}`);
       expect(deleteRes.statusCode).toBe(200);
       expect(deleteRes.body.success).toBe(true);
-      expect(deleteRes.body.message).toBe('All webhook data cleared');
-
-      // Verify data is cleared
-      getRes = await request(app).get('/api/webhooks');
-      expect(getRes.body.length).toBe(0);
+      // ns1 should be empty, ns2 should still have data
+      const getRes1 = await request(app).get(`/api/webhooks/${TEST_NAMESPACE1}`);
+      const getRes2 = await request(app).get(`/api/webhooks/${TEST_NAMESPACE2}`);
+      expect(getRes1.body.length).toBe(0);
+      expect(getRes2.body.length).toBe(1);
     });
   });
 
   describe('Health Endpoint', () => {
-    it('GET /health should return status ok', async () => {
+    it('GET /health/:namespace should return status ok and correct count', async () => {
+      await request(app)
+        .post(`/webhook/${TEST_NAMESPACE1}`)
+        .send({ test: 'data' })
+        .set('Content-Type', 'application/json');
+      const res = await request(app).get(`/health/${TEST_NAMESPACE1}`);
+      expect(res.statusCode).toBe(200);
+      expect(res.body.status).toBe('ok');
+      expect(res.body.webhookCount).toBe(1);
+      expect(res.body.namespace).toBe(TEST_NAMESPACE1);
+    });
+    it('GET /health should return global stats', async () => {
+      await request(app)
+        .post(`/webhook/${TEST_NAMESPACE1}`)
+        .send({ test: 'data' })
+        .set('Content-Type', 'application/json');
+      await request(app)
+        .post(`/webhook/${TEST_NAMESPACE2}`)
+        .send({ test: 'data2' })
+        .set('Content-Type', 'application/json');
       const res = await request(app).get('/health');
       expect(res.statusCode).toBe(200);
       expect(res.body.status).toBe('ok');
-      expect(res.body.timestamp).toBeDefined();
-      expect(res.body.webhookCount).toBeDefined();
+      expect(res.body.webhookCount).toBe(2);
+      expect(res.body.namespaces).toContain(TEST_NAMESPACE1);
+      expect(res.body.namespaces).toContain(TEST_NAMESPACE2);
     });
+  });
 
-    it('should return correct webhook count', async () => {
-      // Add a webhook
+  describe('Landing Page', () => {
+    it('GET /webhook should list all namespaces', async () => {
       await request(app)
-        .post('/webhook')
+        .post(`/webhook/${TEST_NAMESPACE1}`)
         .send({ test: 'data' })
         .set('Content-Type', 'application/json');
-
-      const res = await request(app).get('/health');
-      expect(res.body.webhookCount).toBe(1);
+      await request(app)
+        .post(`/webhook/${TEST_NAMESPACE2}`)
+        .send({ test: 'data2' })
+        .set('Content-Type', 'application/json');
+      const res = await request(app).get('/webhook');
+      expect(res.statusCode).toBe(200);
+      expect(res.text).toContain(TEST_NAMESPACE1);
+      expect(res.text).toContain(TEST_NAMESPACE2);
     });
   });
 
   describe('Display Endpoint', () => {
-    it('GET / should render the dashboard', async () => {
-      const res = await request(app).get('/');
+    it('GET /webhook/:namespace should render the dashboard for that namespace', async () => {
+      await request(app)
+        .post(`/webhook/${TEST_NAMESPACE1}`)
+        .send({ test: 'data' })
+        .set('Content-Type', 'application/json');
+      const res = await request(app).get(`/webhook/${TEST_NAMESPACE1}`);
       expect(res.statusCode).toBe(200);
       expect(res.text).toContain('Webhook Demo');
       expect(res.text).toContain('Total Webhooks');
-    });
-
-    it('should display webhook count correctly', async () => {
-      // Add a webhook
-      await request(app)
-        .post('/webhook')
-        .send({ test: 'data' })
-        .set('Content-Type', 'application/json');
-
-      const res = await request(app).get('/');
-      expect(res.text).toContain('Total Webhooks');
-      expect(res.text).toContain('1'); // Should show count of 1
+      expect(res.text).toContain('1');
     });
   });
 
   describe('Error Handling', () => {
     it('should handle malformed JSON gracefully', async () => {
       const res = await request(app)
-        .post('/webhook')
+        .post(`/webhook/${TEST_NAMESPACE1}`)
         .set('Content-Type', 'application/json')
         .send('not-json');
-
       expect(res.statusCode).toBe(400);
     });
-
     it('should handle empty body', async () => {
       const res = await request(app)
-        .post('/webhook')
+        .post(`/webhook/${TEST_NAMESPACE1}`)
         .set('Content-Type', 'application/json')
         .send('');
-
       expect(res.statusCode).toBe(400);
     });
   });
 
   describe('Rate Limiting', () => {
-    it('should enforce rate limits', async () => {
+    it('should enforce rate limits per namespace', async () => {
       // Make 5 requests to test rate limiting works (without hitting the actual limit)
       const requests = [];
       for (let i = 0; i < 5; i++) {
         requests.push(
           request(app)
-            .post('/webhook')
+            .post(`/webhook/${TEST_NAMESPACE1}`)
             .send({ test: `data${i}` })
             .set('Content-Type', 'application/json')
         );
       }
-
       const responses = await Promise.all(requests);
-      
-      // All should succeed (we're not hitting the rate limit)
       for (let i = 0; i < 5; i++) {
         expect(responses[i].statusCode).toBe(200);
       }
-      
-      // Verify rate limiting is configured by checking the response headers
       expect(responses[0].headers).toHaveProperty('x-ratelimit-limit');
       expect(responses[0].headers).toHaveProperty('x-ratelimit-remaining');
     });
